@@ -3,7 +3,8 @@
  *
  *       Filename:  main.c
  *
- *    Description:  
+ *    Description:  The main function read the input file line by line and process the
+ *                  commands
  *
  *        Version:  1.0
  *        Created:  03/09/2019 08:42:15 AM

@@ -30,6 +30,9 @@ Path *getPathList() {
     return pathListG;
 }
 
+// Add path to the global path list
+// Param - attr: path attr
+// Param - attrId: attr id for the path attr
 int addPath(char *attr, uint16_t attrId) {
     int count = 0;
     int found = 0;
@@ -37,6 +40,7 @@ int addPath(char *attr, uint16_t attrId) {
     Path *path = NULL;
     Neighbor *neighborP = NULL;
 
+    // Check if the path attr exists in the global path list
     for(currP = pathListG;currP != NULL; currP = currP->next) {
         if (!strncmp(currP->attr, attr, ATTR_LEN)) {
             break;
@@ -45,7 +49,7 @@ int addPath(char *attr, uint16_t attrId) {
         prevP = currP;
     }
 
-    if (currP == NULL) { // This is the first or last node in the path list
+    if (currP == NULL) { // This means either the global path list is empty or a new path is being added
         Path *path = (Path *)malloc(sizeof(Path));
         if (path == NULL) {
             printf("failed to allocate memory for path, attr=%s\n", attr);
@@ -62,8 +66,9 @@ int addPath(char *attr, uint16_t attrId) {
         } else { // This path is added at the end of the list
             prevP->next = path;
         }
-    } else {
+    } else { // This is a existing path, move it to the end of the path list
         prevP->next = currP->next;
+        // Update the neighbor list for this path
         if (prevP->neighborList == NULL) {
             prevP->neighborList = currP->neighborList;
         } else {
@@ -75,6 +80,7 @@ int addPath(char *attr, uint16_t attrId) {
             neighborP->pathListNext = currP->neighborList;
         }
 
+        // Traverse to the end of the path list
         while(prevP->next != NULL) {
             prevP = prevP->next;
         }
@@ -82,18 +88,21 @@ int addPath(char *attr, uint16_t attrId) {
         currP->attrId = attrId;
         currP->next = NULL;
         currP->neighborList = NULL;
+        // Add the updated path at the end of the path list
         prevP->next = currP;
     }
 
     return 0;
 }
 
+// Add neighbor to the Path's neighbor list. This means that this is the last path update the neighbor sent out.
 void addNeighborToPath(Path *path, Neighbor *neighbor) {
     neighbor->pathListNext = path->neighborList;
     path->neighborList = neighbor;
     return;
 }
 
+// Remove neighbor from the Path's neighbor list.
 void removeNeighborFromPath(Path *path, Neighbor *neighbor) {
     Neighbor *neighborP;
 

@@ -26,12 +26,15 @@
 
 #define ATTR_LEN 19
 
-
+/*
+ * This is the structure for paths. It is a linked list of paths.
+ * The member neighborList is to maintain a reference to the neighbors for which this path is the last update sent.
+ */
 typedef struct Path {
-    char attr[ATTR_LEN];
-    int attrId;
-    struct Neighbor *neighborList;
-    struct Path *next;
+    char attr[ATTR_LEN];            // Path attr (IP prefix), max len is 19
+    int attrId;                     // Attribute id to check if the attribute was updated
+    struct Neighbor *neighborList;  // Pointer to the neighbor list, a list of neighbor for which this Path is the last update sent
+    struct Path *next;              // Pointer to next Path element in the list
 } Path;
 
 int addPath(char *prefix, uint16_t attrId);
