@@ -3,7 +3,7 @@
  *
  *       Filename:  path.c
  *
- *    Description:  
+ *    Description:  Path structure and path list implementation
  *
  *        Version:  1.0
  *        Created:  03/09/2019 03:07:19 PM
@@ -24,80 +24,126 @@
 #include <string.h>
 #include <stdint.h>
 
-Path *pathListG = NULL;
+Path *pathHeadG = NULL;
+Path *pathTailG = NULL;
 
-Path *getPathList() {
-    return pathListG;
+Path *getPathHead() {
+    return pathHeadG;
 }
 
-// Add path to the global path list
-// Param - attr: path attr
-// Param - attrId: attr id for the path attr
-int addPath(char *attr, uint16_t attrId) {
-    int count = 0;
-    int found = 0;
-    Path *prevP = NULL, *currP = NULL;
-    Path *path = NULL;
-    Neighbor *neighborP = NULL, *neighborsList = NULL;
+Path *getPathTail() {
+    return pathTailG;
+}
 
-    // Check if the path attr exists in the global path list
-    for(currP = pathListG;currP != NULL; currP = currP->next) {
-        if (!strncmp(currP->attr, attr, ATTR_LEN)) {
-            break;
-        }
-
-        prevP = currP;
+// Create a Path struct and set the members using the arguments
+Path *createPath(char *attr, uint16_t attrId) {
+    char *newAttr;
+    Path *path = malloc(sizeof(Path));
+    if (path == NULL) {
+        printf("failed to allocate memory for path %s id %d\n", attr, attrId);
     }
 
-    if (currP == NULL) { // This means either the global path list is empty or a new path is being added
-        Path *path = (Path *)malloc(sizeof(Path));
-        if (path == NULL) {
-            printf("failed to allocate memory for path, attr=%s\n", attr);
-            return -1;
-        }
-
-        strncpy(path->attr, attr, ATTR_LEN);
-        path->attrId = attrId;
-        path->next = NULL;
-        path->numNeighbors = 0;
-
-        if (prevP == NULL) { // This path is added at the start of the list
-            pathListG = path;
-        } else { // This path is added at the end of the list
-            prevP->next = path;
-        }
-    } else { // This is a existing path, move it to the end of the path list
-        prevP->next = currP->next;
-        
-        if (currP->numNeighbors > 0) {
-            // Update the neighbors with the correct last path
-            neighborsList = getNeighborsList();
-            count = 0;
-            for (neighborP = neighborsList; neighborP != NULL; neighborP = neighborP->next) {
-                if (neighborP->path == currP) {
-                    count++;
-                    neighborP->path = prevP;
-                    (prevP->numNeighbors)++;
-                    if (count == currP->numNeighbors) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Traverse to the end of the path list
-        while(prevP->next != NULL) {
-            prevP = prevP->next;
-        }
-
-        currP->attrId = attrId;
-        currP->next = NULL;
-        currP->numNeighbors = 0;
-        // Add the updated path at the end of the path list
-        prevP->next = currP;
+    newAttr = (char *)malloc(ATTR_LEN);
+    if (newAttr == NULL) {
+        printf("failed to allocate memory for attr %s\n", attr);
+        return NULL;
     }
 
-    return 0;
+    strncpy(newAttr, attr, ATTR_LEN);
+    path->attr = newAttr;
+    path->attrId = attrId;
+    path->numNeighbors = 0;
+    path->next = NULL;
+    path->prev = NULL;
+    return path;
+}
+
+// Create a Path from an existing path and populate the path attributes attr and attr id
+Path *clonePath(Path *path) {
+    Path *newPath = malloc(sizeof(Path));
+    if (newPath == NULL) {
+        printf("failed to allocate memory for path %s id %d\n", path->attr, path->attrId);
+        return NULL;
+    }
+
+    newPath->attr = path->attr;
+    newPath->attrId = path->attrId;
+    newPath->numNeighbors = 0;
+    newPath->next = NULL;
+    newPath->prev = NULL;
+    return newPath;
+}
+
+// Delete the path from the path list
+void deletePath(Path *path) {
+    if (path->prev != NULL) {
+        path->prev->next = path->next;
+
+        if (pathTailG == path) {
+            pathTailG = path->prev;
+        }
+    }
+
+    if (path->next != NULL) {
+        path->next->prev = path->prev;
+        if (pathHeadG == path) {
+            pathHeadG = path->next;
+        }
+    }
+}
+
+// Add a path at the end of the list
+Path *appendPath(char *attr, uint16_t attrId) {
+    Path *path = createPath(attr, attrId);
+    if (path == NULL) {
+        return NULL;
+    }
+
+    if (pathHeadG == NULL) {
+        pathHeadG = path;
+        pathTailG = path;
+    } else {
+        path->prev = pathTailG;
+        pathTailG->next = path;
+        pathTailG = path;
+    }
+
+    return path;
+}
+
+// Update the path with the new attr id
+Path *updatePath(Path *path, uint16_t attrId) {
+    Path *newPath;
+
+    if (path != NULL) {
+        if (path->numNeighbors > 0) {
+            // If this the last update sent by any of the neighbors, keep this path in the
+            // paths list and add a new one at the end of the list. Set the path attr member
+            // to NULL so that we know this path is invalid and need to be removed when there
+            // is no neighbor pointing to this path.
+            path->attrId = attrId;
+            newPath = clonePath(path);
+            path->attr = NULL;
+            path->attrId = 0;
+        } else {
+            // Remove the path from the paths list and add it at the end
+            deletePath(path);
+            newPath = path;
+            newPath->attrId = attrId;
+        }
+
+        // Add the new path at the end of the paths list
+        if (pathTailG != newPath) {
+            pathTailG->next = newPath;
+            newPath->prev = pathTailG;
+            pathTailG = newPath;
+            pathTailG->next = NULL;
+        }
+
+        return newPath;
+    }
+
+    return NULL;
 }
 
 // Increment neighbor count for path
@@ -112,6 +158,10 @@ void incrNeighborCount(Path *path) {
 void decrNeighborCount(Path *path) {
     if (path != NULL) {
         (path->numNeighbors)--;
+        // If the neighbor count is 0 and the path does not have attr set, remove the path from the paths list
+        if ((path->attr == NULL) && (path->numNeighbors == 0)) {
+            deletePath(path);
+        }
     }
     return;
 }

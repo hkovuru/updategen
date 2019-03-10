@@ -57,7 +57,7 @@ void sendUpdatesToNeighbor(Neighbor *neighbor, int all) {
         path = NULL;
         
         if (neighbor->path == NULL) { // Updates have not been sent for this neighbor yet
-            path = getPathList();
+            path = getPathHead();
         } else { // The last update for this neighbor is for neighbor->path
             prevPath = neighbor->path;
             path = prevPath->next;
@@ -65,6 +65,13 @@ void sendUpdatesToNeighbor(Neighbor *neighbor, int all) {
 
         // Send path update until path is NULL
         while (path != NULL) {
+            // The attr is NULL, this node does not have valid data. It will be remove when none of
+            // the neighbors are pointing to this path.
+            if (path->attr == NULL) {
+                path = path->next;
+                continue;
+            }
+
             prevPath = path;
             count++;
             printf("Generated update with path %s attribute-id %d for neighbor %s\n", path->attr, path->attrId, neighbor->address);
@@ -91,7 +98,7 @@ void sendUpdatesToNeighbor(Neighbor *neighbor, int all) {
 // Param - all: 1 - send all path updates, 0 - send a max of 10 updates
 void sendUpdates(int all) {
     Neighbor *neighbor;
-    Path *pathList = getPathList();
+    Path *pathList = getPathHead();
 
     if (pathList == NULL) {
         printf("updates list is empty\n");
@@ -107,7 +114,7 @@ void sendUpdates(int all) {
 // Param address - Neighbor address
 void routeRefresh(char *address) {
     Neighbor *neighbor;
-    Path *pathList = getPathList();
+    Path *pathList = getPathHead();
 
     if (pathList == NULL) {
         //printf("updates list is empty\n");

@@ -23,6 +23,7 @@
 
 #include "path.h"
 #include "neighbor.h"
+#include "trie.h"
 
 #define LINE_LEN 250
 
@@ -37,6 +38,7 @@ int main() {
     char *token, *prefix, *neighbor;
     uint16_t attrId;
 
+    initTrie();
     addNeighbor("1.1.1.1");
     addNeighbor("2.2.2.2");
 
