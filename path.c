@@ -38,7 +38,7 @@ int addPath(char *attr, uint16_t attrId) {
     int found = 0;
     Path *prevP = NULL, *currP = NULL;
     Path *path = NULL;
-    Neighbor *neighborP = NULL;
+    Neighbor *neighborP = NULL, *neighborsList = NULL;
 
     // Check if the path attr exists in the global path list
     for(currP = pathListG;currP != NULL; currP = currP->next) {
@@ -59,7 +59,7 @@ int addPath(char *attr, uint16_t attrId) {
         strncpy(path->attr, attr, ATTR_LEN);
         path->attrId = attrId;
         path->next = NULL;
-        path->neighborList = NULL;
+        path->numNeighbors = 0;
 
         if (prevP == NULL) { // This path is added at the start of the list
             pathListG = path;
@@ -68,16 +68,21 @@ int addPath(char *attr, uint16_t attrId) {
         }
     } else { // This is a existing path, move it to the end of the path list
         prevP->next = currP->next;
-        // Update the neighbor list for this path
-        if (prevP->neighborList == NULL) {
-            prevP->neighborList = currP->neighborList;
-        } else {
-            neighborP = prevP->neighborList;
-            while (neighborP->pathListNext != NULL) {
-                neighborP = neighborP->pathListNext;
+        
+        if (currP->numNeighbors > 0) {
+            // Update the neighbors with the correct last path
+            neighborsList = getNeighborsList();
+            count = 0;
+            for (neighborP = neighborsList; neighborP != NULL; neighborP = neighborP->next) {
+                if (neighborP->path == currP) {
+                    count++;
+                    neighborP->path = prevP;
+                    (prevP->numNeighbors)++;
+                    if (count == currP->numNeighbors) {
+                        break;
+                    }
+                }
             }
-
-            neighborP->pathListNext = currP->neighborList;
         }
 
         // Traverse to the end of the path list
@@ -87,7 +92,7 @@ int addPath(char *attr, uint16_t attrId) {
 
         currP->attrId = attrId;
         currP->next = NULL;
-        currP->neighborList = NULL;
+        currP->numNeighbors = 0;
         // Add the updated path at the end of the path list
         prevP->next = currP;
     }
@@ -95,36 +100,19 @@ int addPath(char *attr, uint16_t attrId) {
     return 0;
 }
 
-// Add neighbor to the Path's neighbor list. This means that this is the last path update the neighbor sent out.
-void addNeighborToPath(Path *path, Neighbor *neighbor) {
-    neighbor->pathListNext = path->neighborList;
-    path->neighborList = neighbor;
+// Increment neighbor count for path
+void incrNeighborCount(Path *path) {
+    if (path != NULL) {
+        (path->numNeighbors)++;
+    }
     return;
 }
 
-// Remove neighbor from the Path's neighbor list.
-void removeNeighborFromPath(Path *path, Neighbor *neighbor) {
-    Neighbor *neighborP;
-
-    if (neighbor == NULL) {
-        return;
+// Decrement neighbor count for path
+void decrNeighborCount(Path *path) {
+    if (path != NULL) {
+        (path->numNeighbors)--;
     }
-
-    if (path->neighborList == NULL) {
-        return;
-    }
-
-    if (path->neighborList == neighbor) {
-        path->neighborList = neighbor->pathListNext;
-        neighbor->pathListNext = NULL;
-    } else {
-        for (neighborP = path->neighborList;neighborP->pathListNext != NULL;neighborP = neighborP->pathListNext) {
-            if (neighborP->pathListNext == neighbor) {
-                neighborP->pathListNext = neighbor->pathListNext;
-                neighbor->pathListNext = NULL;
-                break;
-            }
-        }
-    }
+    return;
 }
 

@@ -32,15 +32,15 @@
  */
 typedef struct Path {
     char attr[ATTR_LEN];            // Path attr (IP prefix), max len is 19
-    int attrId;                     // Attribute id to check if the attribute was updated
-    struct Neighbor *neighborList;  // Pointer to the neighbor list, a list of neighbor for which this Path is the last update sent
+    uint16_t attrId;                // Attribute id to check if the attribute was updated
+    uint8_t numNeighbors;           // The number of neighbors that sent this path as their last update
     struct Path *next;              // Pointer to next Path element in the list
 } Path;
 
 int addPath(char *prefix, uint16_t attrId);
 Path *getPathList();
-void addNeighborToPath(Path *path, struct Neighbor *neighbor);
-void removeNeighborFromPath(Path *path, struct Neighbor *neighbor);
+void incrNeighborCount(Path *path);
+void decrNeighborCount(Path *path);
 
 #endif
 

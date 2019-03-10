@@ -25,6 +25,10 @@
 
 Neighbor *neighborListG = NULL;
 
+Neighbor *getNeighborsList() {
+    return neighborListG;
+}
+
 // Add a neighbor at the front of the neighbor list
 int addNeighbor(char *address) {
     int rv = 0;
@@ -35,9 +39,6 @@ int addNeighbor(char *address) {
     }
 
     strncpy(neighbor->address, address, ADDRESS_LEN);
-    neighbor->next = NULL;
-    neighbor->pathListNext = NULL;
-    
     neighbor->next = neighborListG;
     neighborListG = neighbor;
 
@@ -77,12 +78,12 @@ void sendUpdatesToNeighbor(Neighbor *neighbor, int all) {
 
         // Remove the neighbor from the old neighbor->path's neighbor list
         if (neighbor->path != NULL) {
-            removeNeighborFromPath(neighbor->path, neighbor);
+            decrNeighborCount(neighbor->path);
         }
         // Update the neighbor to reflect the last path update that was sent
         neighbor->path = prevPath;
         // Add neighbor to the new path's neighbor list
-        addNeighborToPath(prevPath, neighbor);
+        incrNeighborCount(prevPath);
     }
 }
 
@@ -117,7 +118,7 @@ void routeRefresh(char *address) {
         if (!strncmp(neighbor->address, address, ADDRESS_LEN)) {
             // Reset the previous path. this will lead resending all updates
             if (neighbor->path != NULL) {
-                removeNeighborFromPath(neighbor->path, neighbor);
+                decrNeighborCount(neighbor->path);
                 neighbor->path = NULL;
             }
 
