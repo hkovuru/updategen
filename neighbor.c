@@ -43,8 +43,8 @@ int addNeighbor(char *address) {
     return 0;
 }
 
-void sendUpdatesToNeighbor(Neighbor *neighbor) {
-    Path *path;
+void sendUpdatesToNeighbor(Neighbor *neighbor, int all) {
+    Path *path, *prevPath;
     uint8_t count;
 
     if (neighbor != NULL) {
@@ -54,31 +54,30 @@ void sendUpdatesToNeighbor(Neighbor *neighbor) {
         if (neighbor->path == NULL) {
             path = getPathList();
         } else {
-            path = neighbor->path;
-            path = path->next;
+            prevPath = neighbor->path;
+            path = prevPath->next;
         }
 
-        count++;
-        printf("Generated update with path %s attribute-id %d for neighbor %s\n", path->attr, path->attrId, neighbor->address);
-
-        while (path->next != NULL) {
-            path = path->next;
+        while (path != NULL) {
+            prevPath = path;
             count++;
             printf("Generated update with path %s attribute-id %d for neighbor %s\n", path->attr, path->attrId, neighbor->address);
-            if (count == 10) {
+            if ((!all) && (count == 10)) {
                 break;
             }
+
+            path = path->next;
         }
 
         if (neighbor->path != NULL) {
             removeNeighborFromPath(neighbor->path, neighbor);
         }
-        neighbor->path = path;
-        addNeighborToPath(path, neighbor);
+        neighbor->path = prevPath;
+        addNeighborToPath(prevPath, neighbor);
     }
 }
 
-void sendUpdates() {
+void sendUpdates(int all) {
     Neighbor *neighbor;
     Path *pathList = getPathList();
 
@@ -88,7 +87,7 @@ void sendUpdates() {
     }
 
     for(neighbor = neighborListG;neighbor != NULL; neighbor = neighbor->next) {
-        sendUpdatesToNeighbor(neighbor);
+        sendUpdatesToNeighbor(neighbor, all);
     }
 }
 
@@ -108,7 +107,7 @@ void routeRefresh(char *address) {
                 neighbor->path = NULL;
             }
 
-            sendUpdatesToNeighbor(neighbor);
+            sendUpdatesToNeighbor(neighbor, 0);
         }
     }
 }

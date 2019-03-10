@@ -38,10 +38,11 @@ int addPath(char *attr, uint16_t attrId) {
     Neighbor *neighborP = NULL;
 
     for(currP = pathListG;currP != NULL; currP = currP->next) {
-        prevP = currP;
         if (!strncmp(currP->attr, attr, ATTR_LEN)) {
             break;
         }
+
+        prevP = currP;
     }
 
     if (currP == NULL) { // This is the first or last node in the path list

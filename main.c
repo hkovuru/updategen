@@ -46,7 +46,7 @@ int main() {
     }
 
     while(fgets(line, LINE_LEN, f) != NULL) {
-        //printf("line = %s", line, strlen(line));
+        printf("line = %s", line, strlen(line));
         token = strtok(line, delims);
         if (token == NULL) {
             continue;
@@ -68,6 +68,8 @@ int main() {
         }
     }
 
+    // Sent all updates at the end
+    sendUpdates(1);
     fclose(f);
 }
 
@@ -79,7 +81,7 @@ int processPath(char *prefix, uint16_t attrId) {
 
 int processUpdate() {
     //printf("processUpdate\n");
-    sendUpdates();
+    sendUpdates(0);
     return 0;
 }
 
